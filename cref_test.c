@@ -17,15 +17,16 @@ typedef struct {
 
 void* routine(void* arg) {
 	thread_params_t* params = (thread_params_t*) arg;
+	long nbfreed = 0;
 	for(unsigned i=0; i<params->nbmsgs; i++) {
-		ref_dec(&params->msgs[i]->refcount);
+		if(ref_dec(&params->msgs[i]->refcount)==0) nbfreed++;
 	}
-	return 0;
+	return (void*) nbfreed;
 }
 
 static void message_free(const struct ref *ref) {
 	message_t *msg = (message_t*) ref;
-	printf("delete %s\n",msg->data);
+	//printf("delete %s\n",msg->data);
 	free(msg);
 }
 
@@ -50,10 +51,13 @@ int test(unsigned nbmsgs,unsigned nbthreads) {
 	for(unsigned j=0; j<nbmsgs; j++) {
 		ref_dec(&msgs[j]->refcount);
 	}
+	long nbfreed = 0;
 	for(unsigned i=0; i<nbthreads; i++) {
 		void* retval;
 		pthread_join(params[i].thread,&retval);
+		nbfreed += (long) retval;
 	}
+	printf("nbfreed=%ld\n",nbfreed);
 	free(msgs);
 	free(params);
 }

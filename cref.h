@@ -6,16 +6,18 @@ struct ref {
     int count;
 };
 
-static inline void
+static inline int
 ref_inc(const struct ref *ref)
 {
-    __sync_add_and_fetch((int *)&ref->count, 1);
+	int count = __sync_add_and_fetch((int *)&ref->count, 1);
+	return count;
 }
 
-static inline void
+static inline int
 ref_dec(const struct ref *ref)
 {
-    if (__sync_sub_and_fetch((int *)&ref->count, 1) == 0)
+	int count = __sync_sub_and_fetch((int *)&ref->count, 1);
+    if (count == 0)
         ref->free(ref);
 }
 
